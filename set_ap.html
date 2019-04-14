@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Set Accespoint</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="utf8">
+
+        <style>
+        div [width: 300px; height: 25px;]
+        .input [float: right;]
+
+        </style>
+    </head>
+    <body>
+        <h2 class="title">Configure Network Settings</h2>
+        <form action="/network">
+            <div><label>WIFI DEEL</label></div>
+            <div><label>{ssid}:</label> <input class="input" type="text" name="{ssid}"></div>
+            <div><label>{pass}:</label> <input class="input" type="text" name="{pass}"></div>
+
+            <input type="submit" value="Submit">
+        </form>
+    </body>
+</html>
