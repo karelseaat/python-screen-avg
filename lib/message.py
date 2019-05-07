@@ -1,38 +1,11 @@
-import ustruct as struct
 
+import sys
+if sys.platform == 'esp32' or sys.platform == 'esp8266':
+    import ustruct as struct
+else:
+    import struct
 
-class type(object):
-
-    def __init(self)__:
-        self.mesg = Message()
-        self.type = [type_receve_lightar, type_receve_config, type_receve_register]
-
-    def type_send_lightar(self, lightar):
-        return self.mesg.pack_short_int(1) + lightar
-
-    def type_send_config(self, config):
-        self.mesg.pack_short_int(1) + ???
-
-    def type_send_register(self):
-        self.mesg.pack_short_int(3)
-
-    def type_receve_lightar(self):
-        return self.mesg.unpack_color_ar()
-
-    def type_receve_config(self):
-        self.mesg
-
-    def type_receve_register(self):
-        self.mesg
-
-    def decodetype(self, mesg):
-        self.mesg.add(mesg)
-        mestype = self.mesg.unpack_short_int()
-        return self.type[mestype]()
-
-
-
-class Message(object):
+class message():
     buff = b""
     pos = 0
 
@@ -67,7 +40,6 @@ class Message(object):
         return data
 
 
-
     def unpack(self, fmt):
         fmt = ">"+fmt
         length = struct.calcsize(fmt)
@@ -86,6 +58,13 @@ class Message(object):
         fmt = "B"
         return self.pack(fmt, num)
 
+    def pack_float(self, num):
+        fmt = "f"
+        return self.pack(fmt, num)
+
+    def unpack_float(self):
+        return self.unpack('f')
+
     def unpack_color(self, stringonly=False):
         return self.unpack('BBB')
 
@@ -94,11 +73,12 @@ class Message(object):
         return self.pack(fmt, color[0],color[1],color[2])
 
     def pack_color_ar(self, array):
-        pass
+        bytes = self.pack_short_int(len(array)/3)
+        return bytes + array
 
     def unpack_color_ar(self):
         temppix = []
         length = self.unpack_short_int()
         for i in range(length):
-            temppix.append(mes.unpack_color())
+            temppix.append(self.unpack_color())
         return temppix
