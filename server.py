@@ -6,7 +6,6 @@ from twisted.internet.protocol import DatagramProtocol
 from twisted.python import log
 
 from Xlib import display, X
-# from PIL import Image
 from struct import *
 import zlib
 import time

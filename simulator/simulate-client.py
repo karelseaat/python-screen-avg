@@ -1,20 +1,18 @@
-
 import socket
-import gc
 import time
-from filehelper import makefileifneed
-from websettings import websettings
-from machine import Pin
-import network
 import math
+import sys, os
+import tneopixel
+import pygame
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),"../lib")))
 
 
 def brightness(cols, change):
     """the right way to change brightness acoring to fumulas and shite"""
     if change <= 0:
         change = (change*-1)+0000.1
-
-    if change >= 1:
+    elif change >= 1:
         change = 1/change
 
     # there should be a per color difference in the change since humans eyes and brains, it shall be later.
@@ -47,14 +45,9 @@ def normalisation(cols):
 def colorsqrt(cols):
     """the square rood of color value"""
     return math.sqrt(
-        (cols[0]*cols[0]) +
-        (cols[1]*cols[1]) +
-        (cols[2]*cols[2])
+        (cols[0]*cols[0]) + (cols[1]*cols[1]) + (cols[2]*cols[2])
     )
 
-def allthemultycasts(sta_if):
-    """get the multycast address from the interface (current network parameters)"""
-    return ".".join(sta_if.ifconfig()[0].split('.')[0:3])+'.255'
 
 def dimColors(colors, dim):
     """this will take the color and substact points of every rgb color channel and return that color
@@ -85,31 +78,6 @@ def connection(network_name, network_password):
 
 
 
-def accespointmode():
-    """will change to accespoint mode so you can go to its page and set it up, (to connect to the home accespoint so it is on the network)"""
-    from microDNSSrv import MicroDNSSrv
-    websets.setTemplate('set_ap.html')
-    websets.setregexp(['networkname','password'])
-    websets.addTempVars({'ssid':'networkname','pass':'password'})
-
-    ap = network.WLAN(network.AP_IF)
-    ap.active(True)
-    ap.config(essid='temp-ambi', authmode=1)
-    ap.ifconfig(('192.168.4.1', '255.255.255.0', '192.168.4.1', '192.168.4.1'))
-
-    domainsList = {"*":"192.168.4.1"}
-    mdns = MicroDNSSrv()
-    mdns.SetDomainsList(domainsList)
-    mdns.Start()
-
-
-    while True:
-        mdns._serverProcess()
-
-        websets.WEBQnA()
-
-        # time.sleep_ms(100)
-
 def handleincomingpixels(mesg, addr):
     pixels = mesg
 
@@ -117,12 +85,9 @@ def handleincomingconfig(mesg, addr):
     lightconfig = mesg
 
 
-def clientmode(existing_config):
-    # from message import Message
-    from neopixel import NeoPixel
+def clientmode():
     from mesgType import mesgType
-
-
+    
     global pixels, lightconfig
 
     msgtype = mesgType()
@@ -130,15 +95,14 @@ def clientmode(existing_config):
     msgtype.addfunctonum(handleincomingpixels, 0)
     msgtype.addfunctonum(handleincomingconfig, 1)
 
-    np = NeoPixel(Pin(2), 90)
-    # mes = Message()
-    station = connection(existing_config['networkname'],existing_config['password'])
+    # np = NeoPixel(Pin(2), 90)
+    np = tneopixel.tneopixel(90)
 
-    multip = allthemultycasts(station)
-
+    multip = "255.255.255.255"
     so = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    so.setblocking(False)
-    so.sendto(msgtype.type_send_register(),(multip,5544))
+    # so.setblocking(False)
+    so.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    so.sendto(msgtype.type_send_register(),(multip, 5544))
 
     timeout = 0
 
@@ -153,17 +117,16 @@ def clientmode(existing_config):
             msgtype.decodetype(data, addr)
 
         except Exception as e:
-            print(e)
+            print("network udp socket: " + str(e))
 
-            so.sendto(msgtype.type_send_register(),(multip,5544))
-            time.sleep_ms(10)
+            so.sendto(msgtype.type_send_register(),(multip, 5544))
+            time.sleep(0.01)
 
             if timeout < 8000:
                 timeout += 1
 
             for pix in range(np.n):
                 np[pix] = dimColors(np[pix], (int(timeout/32),int(timeout/32),int(timeout/32)))
-
             np.write()
 
         incrementer = length / np.n
@@ -173,22 +136,5 @@ def clientmode(existing_config):
             acount += 1
         np.write()
 
-
-def captive_portal(websets):
-    import usocket as socket
-
-    existing_config = websets.test_config()
-
-    if not existing_config:
-        accespointmode()
-    else:
-        clientmode(existing_config)
-
-websets = websettings()
-
-# clear = Pin(0)
-# if not clear.value():
-#     print("clearing settings !")
-#     # websets.clear_settings()
-
-captive_portal(websets)
+import socket
+clientmode()
