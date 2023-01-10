@@ -1,28 +1,32 @@
 #!/usr/bin/env python
 
+import time
+import sys
+import os
+
 # from uuid import uuid4
 from twisted.application import internet, service
 from twisted.internet.protocol import DatagramProtocol
 from twisted.python import log
 
 from Xlib import display, X
-from struct import *
-import zlib
-import time
-from yaml import load, dump
-import sys, os
+# from struct import *
+# import zlib
+
+from yaml import load, dump, Loader
+
 
 sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-from lib.mesgType import mesgType
+from lib.mesg_type import MesgType
 from lib.message import message
 
-class PingPongProtocol(DatagramProtocol):
+class LightProtocol(DatagramProtocol):
     # de ping pong classe moet worden aangepast, die naam kan niet meer
-    # noisy = False
+
 
     def __init__(self, controller, port, settings):
         self.port = port
-        self.mesgtypes = mesgType()
+        self.mesgtypes = MesgType()
         self.clients = {}
         self.settings = settings
         self.message = message()
@@ -33,7 +37,7 @@ class PingPongProtocol(DatagramProtocol):
         return bool(self.clients)
 
 
-    def handleregister(self, mesg, addr):
+    def handleregister(self, _mesg, addr):
         if addr not in self.clients:
             self.clients.update({addr:30})
         else:
@@ -41,12 +45,14 @@ class PingPongProtocol(DatagramProtocol):
             self.transport.write(somemesg, addr)
             self.clients[addr] = 30
 
-    def sendColors(self,colors):
+    def send_colors(self, colors):
 
         todel = None
 
-        for client, val in self.clients.iteritems():
-            # hier gaan we net zo goed de pack colors sturen, maar deze keer doen we er een ident bij van wat voorn soort pak het is
+        for client, val in self.clients.items():
+            # hier gaan we net zo goed de pack colors sturen,
+            # maar deze keer doen we er een id bij van wat
+            #voorn soort pak het is
             somemesg = self.mesgtypes.type_send_lightar(colors)
             self.transport.write(somemesg, client)
             self.clients[client] -= 1
@@ -63,7 +69,7 @@ class PingPongProtocol(DatagramProtocol):
 
 
 
-class Broadcaster(object):
+class Broadcaster():
 
     W,H = 90,90
     dsp = None
@@ -78,45 +84,56 @@ class Broadcaster(object):
     end = 10
 
     def __init__(self):
-        self.settings = load(open("settings.yml", 'r'))
+        self.settings = load(open("settings.yml", 'r'), Loader=Loader)
         dsp = display.Display()
         self.root = dsp.screen().root
         self.geom = self.root.get_geometry()
         self.steps = (int(self.geom.width/self.W),int(self.geom.height/self.H))
 
     def get_left_pixels(self):
+        """ get the colors from the left side of the screen and return them """
         colors = b""
         if self.settings['stringdirection'] == 'counterclockwize':
             somer = range(1, self.steps[1])
         else:
             somer = range(self.steps[1], 1, -1)
         for y in somer:
-            colors += self.root.get_image(10, (self.steps[1]-y)*self.H, 1,1, X.ZPixmap, 0xffffffff).data[0:3][::-1]
+            colors += self.root.get_image(
+                10, (self.steps[1]-y)*self.H, 1,1, X.ZPixmap, 0xffffffff
+            ).data[0:3][::-1]
         return colors
 
     def get_top_pixels(self):
+        """ get the colors from the top side of the screen and return them """
         colors = b""
         if self.settings['stringdirection'] == 'counterclockwize':
             somer = range(1, self.steps[0])
         else:
             somer = range(self.steps[0], 1, -1)
+
         for x in somer:
-            colors += self.root.get_image(x*self.W, 10, 1,1, X.ZPixmap, 0xffffffff).data[0:3][::-1]
+            colors += self.root.get_image(
+                x*self.W, 10, 1,1, X.ZPixmap, 0xffffffff
+            ).data[0:3][::-1]
         return colors
 
     def get_right_colors(self):
+        """ get the colors from the right side of the screen and return them """
         colors = b""
         if self.settings['stringdirection'] == 'counterclockwize':
             somer = range(1, self.steps[1])
         else:
             somer = range(self.steps[1], 1, -1)
+
         for y in somer:
-            colors += self.root.get_image(self.geom.width-10, y*self.H, 1,1, X.ZPixmap, 0xffffffff).data[0:3][::-1]
+            colors += self.root.get_image(
+                self.geom.width-10, y*self.H, 1,1, X.ZPixmap, 0xffffffff
+            ).data[0:3][::-1]
 
         return colors
 
     def getcolors(self):
-
+        """ concatenate the colors from the screen and resurne them """
         if self.settings['stringdirection'] == 'counterclockwize':
             colors = self.get_left_pixels()
             colors += self.get_top_pixels()
@@ -137,37 +154,48 @@ class Broadcaster(object):
 
         if proto.hasclients() and (self.start - self.end) > self.updatespeed:
             newcolors = self.getcolors()
+            # print(newcolors)
             if newcolors != self.colors:
                 self.colors = newcolors
                 self.speedup()
             else:
                 self.slowdown()
-            proto.sendColors(self.colors)
+            proto.send_colors(self.colors)
             self.end = time.time()
 
         if (self.counter % 100) == 0:
-            log.msg("updatespeed:",self.updatespeed, " hasclients:" , proto.hasclients())
+            log.msg(
+                "updatespeed:",
+                self.updatespeed,
+                " hasclients:",
+                proto.hasclients()
+            )
 
 
     def speedup(self):
+        """ speed up the update rate """
         if self.updatespeed > 0.05:
             self.updatespeed -= 0.2
 
     def slowdown(self):
+        """ slows down the update rate """
         if self.updatespeed < 1.5:
             self.updatespeed += 0.2
 
-    def makeService(self):
-        application = service.Application('Broadcaster')
+    def make_service(self):
+        """ create the licht service """
+        a_app = service.Application('Broadcaster')
 
         root = service.MultiService()
-        root.setServiceParent(application)
+        root.setServiceParent(a_app)
 
-        proto = PingPongProtocol(controller=self, port=5544, settings=self.settings)
+        proto = LightProtocol(
+            self, port=5544, settings=self.settings
+        )
         root.addService(internet.UDPServer(5544, proto))
         root.addService(internet.TimerService(0.05, self.update_colors, proto))
 
-        return application
+        return a_app
 
 
-application = Broadcaster().makeService()
+application = Broadcaster().make_service()

@@ -10,9 +10,11 @@ class message():
     pos = 0
 
     def __len__(self):
+        """ get the length of buffer """
         return len(self.buff) - self.pos
 
     def add(self, data):
+        """ add raw data to the buffer """
         self.buff += data
 
     def save(self):
@@ -23,10 +25,12 @@ class message():
         self.pos = 0
 
     def discard(self):
+        """ empty the buffer """
         self.pos = 0
         self.buff = b""
 
     def read(self, length=None):
+        """ read the buffer and set the pointer where you stopped reading"""
         if length is None:
             data = self.buff[self.pos:]
             self.pos = len(self.buff)
@@ -49,36 +53,40 @@ class message():
         return fields
 
     def pack(self, fmt, *fields):
+        """ pack but make sure it is big endian """
         return struct.pack(">"+fmt, *fields)
 
-    def unpack_short_int(self, stringonly=False):
+    def unpack_short_int(self):
+        """ unpack a byte as a shortint """
         return self.unpack('B')
 
     def pack_short_int(self, num):
-        fmt = "B"
-        return self.pack(fmt, num)
+        """ pack a shortint as a byte """
+        return self.pack("B", num)
 
     def pack_float(self, num):
-        fmt = "f"
-        return self.pack(fmt, num)
+        """ pack a float """
+        return self.pack("f", num)
 
     def unpack_float(self):
+        """ unpack a float """
         return self.unpack('f')
 
-    def unpack_color(self, stringonly=False):
+    def unpack_color(self):
+        """ unpack a color as 3 byes """
         return self.unpack('BBB')
 
     def pack_color(self, color):
-        fmt = "BBB"
-        return self.pack(fmt, color[0],color[1],color[2])
+        """ pack a color as 3 bytes """
+        return self.pack("BBB", color[0],color[1],color[2])
 
     def pack_color_ar(self, array):
-        bytes = self.pack_short_int(len(array)/3)
+        bytes = self.pack_short_int(round(len(array)/3))
         return bytes + array
 
     def unpack_color_ar(self):
         temppix = []
         length = self.unpack_short_int()
-        for i in range(length):
+        for _ in range(length):
             temppix.append(self.unpack_color())
         return temppix

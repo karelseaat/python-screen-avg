@@ -39,7 +39,7 @@ class MicroDNSSrv :
 
 
     def _getPacketAnswerA(packet, ipV4Bytes) :
-        
+
 
         queryEndPos = 12
         while True :
@@ -69,7 +69,7 @@ class MicroDNSSrv :
         self._domList = { }
 
 
-    def _serverProcess(self):
+    def serverProcess(self):
 
         packet, cliAddr = self._server.recvfrom(256)
         domName = MicroDNSSrv._getAskedDomainName(packet)
