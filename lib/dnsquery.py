@@ -6,7 +6,7 @@ class DNSQuery:
         self.ip = ap.ifconfig()[0]
         self.udps = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udps.setblocking(False)
-        self.udps.bind(('',53))
+        self.udps.bind(('', 53))
 
     def makedomain(self, data):
         self.domain = ""
