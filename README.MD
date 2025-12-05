@@ -1,53 +1,32 @@
-# 1 what is it
+ # Project Overview
 
-It is a simulated version of a screen ambilight client server combination.
-The client can run on a esp32 micro-controller that steers a neopixel rgb led string.
-Or can run on a simulated controller based on a pygame graphical screen to simulate a led string.
-All based on python/micropython.
-The server is based on twisted and will sample colors of the screen and send them to the client.
-The protocol i, udp based.
+This repository contains the source code for a custom network configuration and lighting control system implemented in Python for LoRaWAN devices, specifically a LoPy board. The project is divided into several modules that handle various aspects of the application such as web interface, MicroDNSSrv for DNS services, and WS2812 LED control among others.
 
-# 1.2 why care
+## Key Components
 
-It is a nice way to get ambilight on a monitor, perhaps it could be faster since python is not the fastest language, but it works.
+- **Web Interface**: Implemented using Flask, this component provides a user-friendly HTML form to set up the network access point (SSID and password) and customize the color settings of an integrated RGB LED strip.
+- **MicroDNSSrv**: A MicroPython implementation of the Dnsmasq DNS server that allows for easy hostname configuration and dynamic IP address management on the LoRaWAN network.
+- **LED Control**: Utilizing the WS2812 library, this component manages an RGB LED strip connected to a LoPy board, enabling custom lighting configurations based on user input from the web interface.
 
-# 2 how to use it
+## Features
 
-Basics:
-1 install pipenv https://pypi.org/project/pipenv/
-2 in this directory's run : pipenv shell
-3 pipenv install (to install all the packages)
+- **Network Configuration**: Users can set up their own access point network easily using the provided web interface.
+- **LED Customization**: Users can adjust the brightness and saturation of the integrated RGB LED strip through the web interface, providing a simple way to customize the appearance of the device.
 
-# 2.1 client
+## Requirements
 
-for now only the simulated client (the real client is based on micropython on a esp32 but this should be easy enough)
+To run this project, you'll need the following:
 
-when in the pipenv environment you can got to the simulator dir and run ./simulate_client.py
-This will show you a pygame screen with the simulated led strip (they will be all black if you don't have a server running)
-So lets get a server running
+- A LoPy board with a WS2812 RGB LED strip connected to it
+- microPython installed on your LoRaWAN device
+- Twisted, Xlib, PyYAML, Pygame, Pylint packages installed (see `Pipfile` for installation instructions)
 
-# 1.2 server
+## Usage
 
-when in the pipenv virt environment activated by (pipenv shell): twistd -y server.py
-Now the server is running (it will run immediately in the background)
-Check running or not with (ps -A |grep twistd)
+To use the project, follow these steps:
 
-# 3 parts of the software
-
-root dir:
-main.py (this is what needs to run on a esp32 micro-controller, not sure if it still works)
-server.py (the twisted server part)
-settings.yml (is this still used ?)
-
-lib dir:
-dnsquery.py (it is a DNS server lib, used for a capture portal for a esp32 but is it used here ?)
-filehelper.py (the beginning of a structured file writer reader for dicts, crude key value store)
-mesg_type.py (a lib that will distribute network messages by packet type incoming and outgoing)
-messages.py (a lib that will encode and decode network messages)
-microDNSSrv (it ties in with DNS query or is a replacement, i guess it is not used by this project)
-websettings.py (it is a web-server lib, but i guess it is not used by this project as well)
-ws28##.py (libs that are needed by the esp32 micropython, not for the simulator)
-
-simulator dir:
-simulator_client.py (the esp32 neopixel simulator)
-tneopixel (the simulator replacement for ws28xx with pygame to show the neopixel led strip om screen)
+1. Flash MicroPython onto your LoRaWAN device using the appropriate tool (e.g., Espressif's Thonny or Microsoft's Visual Micro).
+2. Install the required packages listed in `Pipfile`.
+3. Upload the entire contents of this repository to your LoRaWAN device using a suitable file transfer method (e.g., serial console or FTP).
+4. Connect the RGB LED strip to the appropriate pins on the LoPy board as described in the WS2812 library documentation.
+5. Once everything is set up, power on your device and access the web interface by connecting to the newly created network (SSID and password provided through the web interface). Configure the network settings, and customize the LED color settings as desired.
